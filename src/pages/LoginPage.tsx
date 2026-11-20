@@ -9,8 +9,8 @@ export const LoginPage: React.FC = () => {
   const { login, isDemoMode } = useAuth();
   const navigate = useNavigate();
 
-  const [email, setEmail] = useState('admin@fleetmanager.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -85,7 +85,7 @@ export const LoginPage: React.FC = () => {
             <Input
               label="Admin Email Address"
               type="email"
-              placeholder="admin@fleetmanager.com"
+              placeholder="admin@yourcompany.com"
               leftIcon={<Mail className="w-4 h-4" />}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
