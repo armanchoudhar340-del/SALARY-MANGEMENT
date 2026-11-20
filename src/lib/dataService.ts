@@ -48,17 +48,26 @@ function saveLocal<T>(key: string, val: T): void {
 
 // Initialize seed data if empty in localStorage
 function initLocalSeed() {
+  const savedEmployees = loadLocal<Employee[]>(STORAGE_KEYS.EMPLOYEES, []);
+  const hasSampleEmployees = savedEmployees.some((e) => e.id && String(e.id).startsWith('emp-00'));
+  if (hasSampleEmployees) {
+    localStorage.removeItem(STORAGE_KEYS.EMPLOYEES);
+    localStorage.removeItem(STORAGE_KEYS.ATTENDANCE);
+    localStorage.removeItem(STORAGE_KEYS.TRANSACTIONS);
+    localStorage.removeItem(STORAGE_KEYS.MONTHLY_RECORDS);
+  }
+
   if (!localStorage.getItem(STORAGE_KEYS.EMPLOYEES)) {
-    saveLocal(STORAGE_KEYS.EMPLOYEES, INITIAL_EMPLOYEES);
+    saveLocal(STORAGE_KEYS.EMPLOYEES, []);
   }
   if (!localStorage.getItem(STORAGE_KEYS.SETTINGS)) {
     saveLocal(STORAGE_KEYS.SETTINGS, INITIAL_SETTINGS);
   }
   if (!localStorage.getItem(STORAGE_KEYS.ATTENDANCE)) {
-    saveLocal(STORAGE_KEYS.ATTENDANCE, generateSampleAttendance());
+    saveLocal(STORAGE_KEYS.ATTENDANCE, []);
   }
   if (!localStorage.getItem(STORAGE_KEYS.TRANSACTIONS)) {
-    saveLocal(STORAGE_KEYS.TRANSACTIONS, INITIAL_TRANSACTIONS);
+    saveLocal(STORAGE_KEYS.TRANSACTIONS, []);
   }
   if (!localStorage.getItem(STORAGE_KEYS.MONTHLY_RECORDS)) {
     saveLocal(STORAGE_KEYS.MONTHLY_RECORDS, []);
