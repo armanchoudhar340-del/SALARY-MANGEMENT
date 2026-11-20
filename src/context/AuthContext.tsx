@@ -19,6 +19,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isDemoMode, setIsDemoMode] = useState(!isSupabaseConfigured);
 
   useEffect(() => {
+    // Purge old demo storage if present
+    const cachedDemo = localStorage.getItem('driverpay_demo_admin');
+    if (cachedDemo && cachedDemo.includes('fleetmanager.com')) {
+      localStorage.removeItem('driverpay_demo_admin');
+    }
+
     if (isSupabaseConfigured && supabase) {
       // Check active Supabase session
       supabase.auth.getSession().then(({ data: { session } }) => {
@@ -42,19 +48,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Demo / Local Mode (no Supabase env vars set yet)
       const savedDemoUser = localStorage.getItem('driverpay_demo_admin');
       if (savedDemoUser) {
-        setUser(JSON.parse(savedDemoUser));
+        try {
+          const parsed = JSON.parse(savedDemoUser);
+          if (parsed?.email && parsed.email.includes('fleetmanager.com')) {
+            localStorage.removeItem('driverpay_demo_admin');
+            setUser(null);
+          } else {
+            setUser(parsed);
+          }
+        } catch {
+          localStorage.removeItem('driverpay_demo_admin');
+          setUser(null);
+        }
       } else {
-        // Pre-authenticate default admin in demo mode so user can test immediately
-        const defaultAdmin = {
-          id: 'admin-001',
-          email: 'admin@fleetmanager.com',
-          app_metadata: {},
-          user_metadata: { full_name: 'Fleet Admin' },
-          aud: 'authenticated',
-          created_at: new Date().toISOString(),
-        } as unknown as User;
-        setUser(defaultAdmin);
-        localStorage.setItem('driverpay_demo_admin', JSON.stringify(defaultAdmin));
+        setUser(null);
       }
       setIsDemoMode(true);
       setIsLoading(false);

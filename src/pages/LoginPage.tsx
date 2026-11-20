@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
@@ -6,13 +6,24 @@ import { Input } from '../components/common/Input';
 import { Truck, Lock, Mail, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { login, isDemoMode } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Ensure form starts completely blank
+    setEmail('');
+    setPassword('');
+    // Clear any previous demo credentials cached in localStorage
+    const cached = localStorage.getItem('driverpay_demo_admin');
+    if (cached) {
+      localStorage.removeItem('driverpay_demo_admin');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,22 +80,13 @@ export const LoginPage: React.FC = () => {
             </div>
           )}
 
-          {isDemoMode && (
-            <div className="mb-5 p-3 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-800 flex items-start gap-2">
-              <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold">Demo / Preview Mode Active</p>
-                <p className="text-purple-600/80 mt-0.5 text-[11px]">
-                  Default credentials are pre-filled below. You can sign in directly to test all features.
-                </p>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" autoComplete="off">
             <Input
               label="Admin Email Address"
               type="email"
+              id="admin-email-field"
+              name="admin-email-field"
+              autoComplete="off"
               placeholder="admin@yourcompany.com"
               leftIcon={<Mail className="w-4 h-4" />}
               value={email}
@@ -95,6 +97,9 @@ export const LoginPage: React.FC = () => {
             <Input
               label="Password"
               type="password"
+              id="admin-password-field"
+              name="admin-password-field"
+              autoComplete="new-password"
               placeholder="••••••••"
               leftIcon={<Lock className="w-4 h-4" />}
               value={password}
