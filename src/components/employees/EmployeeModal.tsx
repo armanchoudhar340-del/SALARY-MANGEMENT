@@ -172,7 +172,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       description="Enter permanent driver profile and salary details."
       maxWidth="lg"
     >
-      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
+      <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5" autoComplete="off">
         {saveError && (
           <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
             {saveError}

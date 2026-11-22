@@ -45,7 +45,7 @@ export const Modal: React.FC<ModalProps> = ({
   }[maxWidth];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center overflow-y-auto overscroll-y-contain p-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-[max(0.5rem,env(safe-area-inset-bottom))] sm:p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
       <div
         className="fixed inset-0"
         onClick={onClose}
@@ -54,10 +54,10 @@ export const Modal: React.FC<ModalProps> = ({
       <div
         role="dialog"
         aria-modal="true"
-        className={`relative w-full ${maxWidthClasses} bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden transform transition-all max-h-[92vh] flex flex-col`}
+        className={`relative my-auto w-full ${maxWidthClasses} bg-white rounded-2xl shadow-2xl border border-purple-100 overflow-hidden transform transition-all max-h-[calc(100dvh-1rem)] sm:max-h-[92vh] flex flex-col`}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/50">
+        <div className="flex shrink-0 items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 bg-slate-50/50">
           <div>
             <h3 className="text-base sm:text-lg font-semibold text-slate-800">{title}</h3>
             {description && (
@@ -73,7 +73,7 @@ export const Modal: React.FC<ModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto">{children}</div>
+        <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-y-contain [touch-action:pan-y] [-webkit-overflow-scrolling:touch] p-4 pb-6 sm:p-6">{children}</div>
       </div>
     </div>
   );
