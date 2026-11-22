@@ -8,7 +8,7 @@ import { Button } from '../common/Button';
 import { Employee, SalaryTransaction, TransactionType, PaymentMethod } from '../../types';
 import { useSettings } from '../../context/SettingsContext';
 import { getTodayDateString } from '../../lib/utils';
-import { DollarSign, Calendar, FileText, User } from 'lucide-react';
+import { IndianRupee, Calendar, FileText, User } from 'lucide-react';
 
 const paymentSchema = z.object({
   employee_id: z.string().min(1, 'Please select an employee'),
@@ -50,7 +50,7 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
       employee_id: defaultEmployeeId || (employees[0]?.id ?? ''),
-      amount: 1000,
+      amount: undefined,
       date: getTodayDateString(),
       transaction_type: 'advance',
       payment_method: 'upi',
@@ -73,7 +73,7 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
     } else {
       reset({
         employee_id: defaultEmployeeId || (employees[0]?.id ?? ''),
-        amount: 1000,
+        amount: undefined,
         date: getTodayDateString(),
         transaction_type: 'advance',
         payment_method: 'upi',
@@ -134,7 +134,7 @@ export const AddPaymentModal: React.FC<AddPaymentModalProps> = ({
             type="number"
             step="0.01"
             placeholder="e.g. 500"
-            leftIcon={<DollarSign className="w-4 h-4" />}
+            leftIcon={<IndianRupee className="w-4 h-4" />}
             required
             error={errors.amount?.message}
             {...register('amount')}

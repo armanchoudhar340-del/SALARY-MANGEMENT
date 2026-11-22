@@ -6,8 +6,8 @@ export function useSalaryRecords(monthStr: string) {
 
   const query = useQuery({
     queryKey: ['monthly-records', monthStr],
-    queryFn: () => dataService.generateMonthlyRecords(monthStr),
-    staleTime: 1000 * 30,
+    queryFn: () => dataService.calculateMonthlyRecords(monthStr),
+    staleTime: 1000 * 60,
   });
 
   const regenerateMutation = useMutation({

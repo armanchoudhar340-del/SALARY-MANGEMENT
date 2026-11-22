@@ -98,6 +98,33 @@ export function calculateEmploymentDuration(
   return parts.join(', ');
 }
 
+/** Counts complete service-month anniversaries through the selected salary month. */
+export function calculateCompletedServiceMonths(
+  joiningDateStr: string,
+  referenceMonth: string,
+  leavingDateStr?: string | null
+): number {
+  const joining = new Date(`${joiningDateStr}T12:00:00`);
+  const [year, month] = referenceMonth.split('-').map(Number);
+  if (Number.isNaN(joining.getTime()) || !year || !month) return 0;
+
+  const selectedMonthEnd = new Date(year, month, 0, 12, 0, 0);
+  const today = new Date();
+  const reference = selectedMonthEnd > today ? today : selectedMonthEnd;
+  if (leavingDateStr) {
+    const leaving = new Date(`${leavingDateStr}T12:00:00`);
+    if (!Number.isNaN(leaving.getTime()) && leaving < reference) {
+      reference.setTime(leaving.getTime());
+    }
+  }
+  if (reference < joining) return 0;
+
+  let months = (reference.getFullYear() - joining.getFullYear()) * 12;
+  months += reference.getMonth() - joining.getMonth();
+  if (reference.getDate() < joining.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
 export interface CalculatedMonthlySalary {
   calendarDays: number;
   eligibleDays: number;

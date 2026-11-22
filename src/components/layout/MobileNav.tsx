@@ -6,6 +6,7 @@ import {
   CalendarCheck,
   CreditCard,
   FileSpreadsheet,
+  Fuel,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -15,6 +16,7 @@ export const MobileNav: React.FC = () => {
     { to: '/employees', label: 'Drivers', icon: Users },
     { to: '/attendance', label: 'Attendance', icon: CalendarCheck },
     { to: '/payments', label: 'Payments', icon: CreditCard },
+    { to: '/fuel', label: 'Fuel', icon: Fuel },
     { to: '/monthly-salary', label: 'Salary', icon: FileSpreadsheet },
   ];
 

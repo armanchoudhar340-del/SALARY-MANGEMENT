@@ -10,7 +10,6 @@ import { useSettings } from '../../context/SettingsContext';
 import {
   Calendar,
   Clock,
-  DollarSign,
   Phone,
   MapPin,
   FileText,

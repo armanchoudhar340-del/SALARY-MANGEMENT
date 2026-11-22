@@ -5,6 +5,7 @@ import {
   Users,
   CalendarCheck,
   CreditCard,
+  Fuel,
   FileSpreadsheet,
   FileBarChart,
   Settings,
@@ -32,6 +33,11 @@ export const navItems = [
     to: '/payments',
     label: 'Money Taken / Payments',
     icon: CreditCard,
+  },
+  {
+    to: '/fuel',
+    label: 'Fuel & Kilometer Statement',
+    icon: Fuel,
   },
   {
     to: '/monthly-salary',

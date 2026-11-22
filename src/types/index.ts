@@ -55,6 +55,20 @@ export interface SalaryTransaction {
   updated_at: string;
 }
 
+export interface FuelLog {
+  id: string;
+  employee_id: string | null;
+  vehicle_number: string;
+  date: string;
+  start_km: number;
+  end_km: number;
+  fuel_litres: number;
+  amount: number;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface MonthlySalaryRecord {
   id: string;
   employee_id: string;
@@ -108,7 +122,9 @@ export interface DashboardStats {
   totalMonthlySalaryBudget: number;
   totalAdvancesTaken: number;
   totalSalaryPaid: number;
+  paidEmployeeCount: number;
   totalRemainingSalary: number;
+  attendanceRecordCount: number;
   todayPresentCount: number;
   todayAbsentCount: number;
   todayHalfDayCount: number;

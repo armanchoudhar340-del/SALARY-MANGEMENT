@@ -8,7 +8,7 @@ export function useEmployees() {
   const query = useQuery({
     queryKey: ['employees'],
     queryFn: () => dataService.getEmployees(),
-    staleTime: 1000 * 30, // 30 seconds
+    staleTime: 1000 * 60,
   });
 
   const addEmployeeMutation = useMutation({
@@ -23,8 +23,10 @@ export function useEmployees() {
   const updateEmployeeMutation = useMutation({
     mutationFn: ({ id, updates }: { id: string; updates: Partial<Employee> }) =>
       dataService.updateEmployee(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['employees'] });
+    onSuccess: (updatedEmployee) => {
+      queryClient.setQueryData<Employee[]>(['employees'], (current) =>
+        current?.map((employee) => employee.id === updatedEmployee.id ? updatedEmployee : employee)
+      );
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['monthly-records'] });
     },

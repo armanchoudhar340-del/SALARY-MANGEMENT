@@ -8,7 +8,7 @@ import { Button } from '../common/Button';
 import { Employee, SalaryType } from '../../types';
 import { useSettings } from '../../context/SettingsContext';
 import { uploadEmployeePhoto } from '../../lib/supabase';
-import { Upload, User, DollarSign, Calendar, Phone, MapPin, Tag } from 'lucide-react';
+import { Upload, User, IndianRupee, Calendar, Phone, MapPin, Tag } from 'lucide-react';
 
 const employeeSchema = z.object({
   full_name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -44,6 +44,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const {
     register,
@@ -81,6 +82,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   }, [monthlySalary, salaryType, setValue]);
 
   useEffect(() => {
+    setSaveError(null);
     if (employeeToEdit) {
       reset({
         full_name: employeeToEdit.full_name,
@@ -126,6 +128,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
   };
 
   const handleFormSubmit = async (data: EmployeeFormData) => {
+    setSaveError(null);
     try {
       let finalPhotoUrl = data.profile_photo_url;
       if (photoFile) {
@@ -155,6 +158,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       onClose();
     } catch (err) {
       console.error('Error saving employee:', err);
+      setSaveError(err instanceof Error ? err.message : 'Could not save this driver. Please try again.');
     } finally {
       setIsUploading(false);
     }
@@ -169,6 +173,11 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
       maxWidth="lg"
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-5">
+        {saveError && (
+          <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            {saveError}
+          </div>
+        )}
         {/* Profile Photo & Basic Header */}
         <div className="flex items-center gap-4 p-3 bg-purple-50/50 rounded-2xl border border-purple-100">
           <div className="relative shrink-0">
@@ -294,7 +303,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                   label="Monthly Salary (₹)"
                   type="number"
                   step="0.01"
-                  leftIcon={<DollarSign className="w-4 h-4" />}
+                  leftIcon={<IndianRupee className="w-4 h-4" />}
                   required
                   error={errors.monthly_salary?.message}
                   {...register('monthly_salary')}
@@ -312,7 +321,7 @@ export const EmployeeModal: React.FC<EmployeeModalProps> = ({
                 label="Daily Wage Rate (₹)"
                 type="number"
                 step="0.01"
-                leftIcon={<DollarSign className="w-4 h-4" />}
+                leftIcon={<IndianRupee className="w-4 h-4" />}
                 required
                 error={errors.daily_salary?.message}
                 {...register('daily_salary')}

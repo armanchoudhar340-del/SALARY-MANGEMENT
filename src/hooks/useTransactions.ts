@@ -8,7 +8,7 @@ export function useTransactions(monthStr?: string) {
   const query = useQuery({
     queryKey: ['transactions', monthStr],
     queryFn: () => dataService.getTransactions(monthStr),
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 60,
   });
 
   const addTransactionMutation = useMutation({
@@ -33,8 +33,23 @@ export function useTransactions(monthStr?: string) {
 
   const deleteTransactionMutation = useMutation({
     mutationFn: (id: string) => dataService.deleteTransaction(id),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['transactions'] });
+      const snapshots = queryClient.getQueriesData<SalaryTransaction[]>({ queryKey: ['transactions'] });
+      snapshots.forEach(([queryKey, current]) => {
+        if (current) {
+          queryClient.setQueryData<SalaryTransaction[]>(
+            queryKey,
+            current.filter((transaction) => transaction.id !== id)
+          );
+        }
+      });
+      return { snapshots };
+    },
+    onError: (_error, _id, context) => {
+      context?.snapshots.forEach(([queryKey, data]) => queryClient.setQueryData(queryKey, data));
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['monthly-records'] });
     },

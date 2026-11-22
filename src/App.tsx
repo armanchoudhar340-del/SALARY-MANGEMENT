@@ -19,6 +19,9 @@ const AttendancePage = lazy(() =>
 const PaymentsPage = lazy(() =>
   import('./pages/PaymentsPage').then((m) => ({ default: m.PaymentsPage }))
 );
+const FuelPage = lazy(() =>
+  import('./pages/FuelPage').then((m) => ({ default: m.FuelPage }))
+);
 const MonthlySalaryPage = lazy(() =>
   import('./pages/MonthlySalaryPage').then((m) => ({ default: m.MonthlySalaryPage }))
 );
@@ -97,6 +100,7 @@ export const App: React.FC = () => {
                     <Route path="employees" element={<EmployeesPage />} />
                     <Route path="attendance" element={<AttendancePage />} />
                     <Route path="payments" element={<PaymentsPage />} />
+                    <Route path="fuel" element={<FuelPage />} />
                     <Route path="monthly-salary" element={<MonthlySalaryPage />} />
                     <Route path="reports" element={<ReportsPage />} />
                     <Route path="settings" element={<SettingsPage />} />

@@ -6,6 +6,7 @@ import {
   MonthlySalaryRecord,
   SalarySettings,
   DashboardStats,
+  FuelLog,
 } from '../types';
 import {
   INITIAL_EMPLOYEES,
@@ -23,6 +24,7 @@ const STORAGE_KEYS = {
   TRANSACTIONS: 'driverpay_transactions',
   MONTHLY_RECORDS: 'driverpay_monthly_records',
   SETTINGS: 'driverpay_settings',
+  FUEL_LOGS: 'driverpay_fuel_logs',
   AUDIT_LOGS: 'driverpay_audit_logs',
 };
 
@@ -72,6 +74,9 @@ function initLocalSeed() {
   if (!localStorage.getItem(STORAGE_KEYS.MONTHLY_RECORDS)) {
     saveLocal(STORAGE_KEYS.MONTHLY_RECORDS, []);
   }
+  if (!localStorage.getItem(STORAGE_KEYS.FUEL_LOGS)) {
+    saveLocal(STORAGE_KEYS.FUEL_LOGS, []);
+  }
 }
 
 initLocalSeed();
@@ -107,7 +112,8 @@ export const dataService = {
     if (isSupabaseConfigured && supabase) {
       const { data, error } = await supabase
         .from('salary_settings')
-        .upsert(updated)
+        .update(updated)
+        .eq('id', current.id)
         .select()
         .single();
 
@@ -167,7 +173,22 @@ export const dataService = {
   },
 
   async updateEmployee(id: string, updates: Partial<Employee>): Promise<Employee> {
-    const list = await this.getEmployees();
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('employees')
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      const list = loadLocal<Employee[]>(STORAGE_KEYS.EMPLOYEES, []);
+      const updatedList = list.map((e) => (e.id === id ? (data as Employee) : e));
+      saveLocal(STORAGE_KEYS.EMPLOYEES, updatedList);
+      return data as Employee;
+    }
+
+    const list = loadLocal<Employee[]>(STORAGE_KEYS.EMPLOYEES, INITIAL_EMPLOYEES);
     const existing = list.find((e) => e.id === id);
     if (!existing) throw new Error('Employee not found');
 
@@ -176,21 +197,6 @@ export const dataService = {
       ...updates,
       updated_at: new Date().toISOString(),
     };
-
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
-        .from('employees')
-        .update(updated)
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      const updatedList = list.map((e) => (e.id === id ? (data as Employee) : e));
-      saveLocal(STORAGE_KEYS.EMPLOYEES, updatedList);
-      return data as Employee;
-    }
-
     const updatedList = list.map((e) => (e.id === id ? updated : e));
     saveLocal(STORAGE_KEYS.EMPLOYEES, updatedList);
     return updated;
@@ -263,12 +269,38 @@ export const dataService = {
   async bulkMarkAttendance(
     records: Omit<AttendanceRecord, 'id' | 'created_at' | 'updated_at'>[]
   ): Promise<AttendanceRecord[]> {
-    const results: AttendanceRecord[] = [];
-    for (const rec of records) {
-      const res = await this.markAttendance(rec);
-      results.push(res);
+    if (records.length === 0) return [];
+
+    const current = loadLocal<AttendanceRecord[]>(STORAGE_KEYS.ATTENDANCE, []);
+    const existingByKey = new Map(current.map((item) => [`${item.employee_id}::${item.date}`, item]));
+    const timestamp = new Date().toISOString();
+    const prepared = records.map((record) => {
+      const existing = existingByKey.get(`${record.employee_id}::${record.date}`);
+      return {
+        ...record,
+        id: existing?.id || (crypto.randomUUID ? crypto.randomUUID() : `att-${Date.now()}-${record.employee_id}`),
+        created_at: existing?.created_at || timestamp,
+        updated_at: timestamp,
+      } satisfies AttendanceRecord;
+    });
+
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('attendance')
+        .upsert(prepared, { onConflict: 'employee_id,date' })
+        .select();
+      if (error) throw error;
+      const saved = (data || []) as AttendanceRecord[];
+      const savedByKey = new Map(saved.map((item) => [`${item.employee_id}::${item.date}`, item]));
+      const updated = current.filter((item) => !savedByKey.has(`${item.employee_id}::${item.date}`));
+      saveLocal(STORAGE_KEYS.ATTENDANCE, [...updated, ...saved]);
+      return saved;
     }
-    return results;
+
+    const preparedByKey = new Map(prepared.map((item) => [`${item.employee_id}::${item.date}`, item]));
+    const updated = current.filter((item) => !preparedByKey.has(`${item.employee_id}::${item.date}`));
+    saveLocal(STORAGE_KEYS.ATTENDANCE, [...updated, ...prepared]);
+    return prepared;
   },
 
   // --------------------------------------------------------------------------
@@ -368,6 +400,46 @@ export const dataService = {
     return true;
   },
 
+  async getFuelLogs(): Promise<FuelLog[]> {
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase
+        .from('fuel_logs')
+        .select('*')
+        .order('date', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      saveLocal(STORAGE_KEYS.FUEL_LOGS, data || []);
+      return (data || []) as FuelLog[];
+    }
+    return loadLocal<FuelLog[]>(STORAGE_KEYS.FUEL_LOGS, []);
+  },
+
+  async addFuelLog(log: Omit<FuelLog, 'id' | 'created_at' | 'updated_at'>): Promise<FuelLog> {
+    const record: FuelLog = {
+      ...log,
+      start_km: Number(log.start_km),
+      end_km: Number(log.end_km),
+      fuel_litres: Number(log.fuel_litres),
+      amount: Number(log.amount),
+      id: crypto.randomUUID ? crypto.randomUUID() : `fuel-${Date.now()}`,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    if (isSupabaseConfigured && supabase) {
+      const { data, error } = await supabase.from('fuel_logs').insert(record).select().single();
+      if (error) throw error;
+      const saved = data as FuelLog;
+      const logs = loadLocal<FuelLog[]>(STORAGE_KEYS.FUEL_LOGS, []);
+      saveLocal(STORAGE_KEYS.FUEL_LOGS, [saved, ...logs]);
+      return saved;
+    }
+
+    const logs = loadLocal<FuelLog[]>(STORAGE_KEYS.FUEL_LOGS, []);
+    saveLocal(STORAGE_KEYS.FUEL_LOGS, [record, ...logs]);
+    return record;
+  },
+
   // --------------------------------------------------------------------------
   // Monthly Salary Records (Snapshots & Generation)
   // --------------------------------------------------------------------------
@@ -387,9 +459,9 @@ export const dataService = {
   },
 
   /**
-   * Idempotently computes and persists monthly salary records for all active employees
+   * Calculates monthly salary records without writing to the database.
    */
-  async generateMonthlyRecords(monthStr: string): Promise<MonthlySalaryRecord[]> {
+  async calculateMonthlyRecords(monthStr: string): Promise<MonthlySalaryRecord[]> {
     const [employees, attendance, transactions, settings] = await Promise.all([
       this.getEmployees(),
       this.getAttendance(monthStr),
@@ -445,6 +517,13 @@ export const dataService = {
       generated.push(record);
     }
 
+    return generated;
+  },
+
+  /** Recalculate and persist monthly salary snapshots when the administrator requests it. */
+  async generateMonthlyRecords(monthStr: string): Promise<MonthlySalaryRecord[]> {
+    const generated = await this.calculateMonthlyRecords(monthStr);
+
     if (isSupabaseConfigured && supabase && generated.length > 0) {
       const { error } = await supabase
         .from('monthly_salary_records')
@@ -481,9 +560,17 @@ export const dataService = {
     }, 0);
 
     // Calculate aggregated earned, advances, salary paid, remaining for all active employees
-    let totalAdvancesTaken = 0;
-    let totalSalaryPaid = 0;
-    let totalEarnedSalary = 0;
+    const totalAdvancesTaken = transactions
+      .filter((tx) => tx.transaction_type === 'advance')
+      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    const totalSalaryPaid = transactions
+      .filter((tx) => tx.transaction_type === 'salary_payment')
+      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+    const paidEmployeeCount = new Set(
+      transactions
+        .filter((tx) => tx.transaction_type === 'salary_payment' && Number(tx.amount) > 0)
+        .map((tx) => tx.employee_id)
+    ).size;
     let totalRemainingSalary = 0;
 
     activeEmployees.forEach((emp) => {
@@ -495,10 +582,7 @@ export const dataService = {
         settings,
       });
 
-      totalAdvancesTaken += calc.totalAdvances;
-      totalSalaryPaid += calc.totalSalaryPaid;
-      totalEarnedSalary += calc.earnedSalary;
-      totalRemainingSalary += calc.remainingBalance;
+      totalRemainingSalary += Math.max(0, calc.remainingBalance);
     });
 
     // Today's attendance counts
@@ -527,7 +611,9 @@ export const dataService = {
       totalMonthlySalaryBudget,
       totalAdvancesTaken,
       totalSalaryPaid,
-      totalRemainingSalary: Math.max(0, totalRemainingSalary),
+      totalRemainingSalary,
+      paidEmployeeCount,
+      attendanceRecordCount: attendance.length,
       todayPresentCount,
       todayAbsentCount,
       todayHalfDayCount,

@@ -23,52 +23,63 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Subscribe to all tables for instant multi-device sync
+    // Batch bursts of realtime changes so one database update causes one refresh.
+    const pendingQueryKeys = new Set<string>();
+    let invalidationTimer: number | undefined;
+    const scheduleInvalidation = (...queryKeys: string[]) => {
+      queryKeys.forEach((key) => pendingQueryKeys.add(key));
+      if (invalidationTimer) window.clearTimeout(invalidationTimer);
+      invalidationTimer = window.setTimeout(() => {
+        pendingQueryKeys.forEach((key) => {
+          void queryClient.invalidateQueries({ queryKey: [key], refetchType: 'active' });
+        });
+        pendingQueryKeys.clear();
+        setLastSyncedAt(new Date());
+      }, 150);
+    };
+
+    // Subscribe to all tables for instant multi-device sync.
     const channel = supabase
       .channel('schema-db-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'employees' },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['employees'] });
-          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-          setLastSyncedAt(new Date());
+          scheduleInvalidation('employees', 'dashboard-stats', 'monthly-records');
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'attendance' },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['attendance'] });
-          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-          queryClient.invalidateQueries({ queryKey: ['monthly-records'] });
-          setLastSyncedAt(new Date());
+          scheduleInvalidation('attendance', 'dashboard-stats', 'monthly-records');
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'salary_transactions' },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['transactions'] });
-          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-          queryClient.invalidateQueries({ queryKey: ['monthly-records'] });
-          setLastSyncedAt(new Date());
+          scheduleInvalidation('transactions', 'dashboard-stats', 'monthly-records');
         }
       )
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'monthly_salary_records' },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['monthly-records'] });
-          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-          setLastSyncedAt(new Date());
+          scheduleInvalidation('monthly-records', 'dashboard-stats');
         }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'fuel_logs' },
+        () => scheduleInvalidation('fuel-logs')
       )
       .subscribe((status) => {
         setIsLiveConnected(status === 'SUBSCRIBED');
       });
 
     return () => {
+      if (invalidationTimer) window.clearTimeout(invalidationTimer);
       if (supabase && channel) {
         supabase.removeChannel(channel);
       }
@@ -77,11 +88,12 @@ export const SyncProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const triggerManualSync = async () => {
     setIsSyncing(true);
-    await queryClient.invalidateQueries();
-    setLastSyncedAt(new Date());
-    setTimeout(() => {
+    try {
+      await queryClient.refetchQueries({ type: 'active' });
+      setLastSyncedAt(new Date());
+    } finally {
       setIsSyncing(false);
-    }, 600);
+    }
   };
 
   return (

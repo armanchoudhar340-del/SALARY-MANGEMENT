@@ -52,24 +52,27 @@ export const MonthlySalaryPage: React.FC = () => {
   // Totals across all generated records
   const totals = useMemo(() => {
     let totalEarned = 0;
-    let totalAdvances = 0;
-    let totalPaid = 0;
     let totalRemaining = 0;
 
     records.forEach((r) => {
       totalEarned += r.earned_salary;
-      totalAdvances += r.total_advances;
-      totalPaid += r.total_salary_paid;
-      totalRemaining += r.remaining_balance;
+      totalRemaining += Math.max(0, r.remaining_balance);
     });
+
+    const totalAdvances = transactions
+      .filter((transaction) => transaction.transaction_type === 'advance')
+      .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
+    const totalPaid = transactions
+      .filter((transaction) => transaction.transaction_type === 'salary_payment')
+      .reduce((sum, transaction) => sum + Number(transaction.amount || 0), 0);
 
     return {
       totalEarned,
       totalAdvances,
       totalPaid,
-      totalRemaining: Math.max(0, totalRemaining),
+      totalRemaining,
     };
-  }, [records]);
+  }, [records, transactions]);
 
   const filteredEmployees = useMemo(() => {
     return employees
@@ -139,6 +142,13 @@ export const MonthlySalaryPage: React.FC = () => {
           </Button>
         </div>
       </div>
+
+      {employees.some((employee) => employee.is_active) && attendance.length === 0 && (
+        <div role="status" className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
+          <p>No attendance is recorded for {formatMonthName(selectedMonth)}. Earned salary and salary due remain ₹0 until attendance is marked.</p>
+        </div>
+      )}
 
       {/* Financial Aggregation Header */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">

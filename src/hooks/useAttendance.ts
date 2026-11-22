@@ -8,7 +8,7 @@ export function useAttendance(monthStr?: string) {
   const query = useQuery({
     queryKey: ['attendance', monthStr],
     queryFn: () => dataService.getAttendance(monthStr),
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 60,
   });
 
   const markAttendanceMutation = useMutation({

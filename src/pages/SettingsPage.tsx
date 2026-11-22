@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/common/Button';
@@ -6,7 +6,7 @@ import { Input } from '../components/common/Input';
 import { isSupabaseConfigured, uploadCompanyLogo } from '../lib/supabase';
 import {
   Building2,
-  DollarSign,
+  IndianRupee,
   Calendar,
   Shield,
   Layers,
@@ -33,6 +33,18 @@ export const SettingsPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  // Settings load asynchronously and may also arrive from another signed-in browser.
+  useEffect(() => {
+    setCompanyName(settings.company_name);
+    setCompanyPhone(settings.company_phone || '');
+    setCompanyAddress(settings.company_address || '');
+    setLogoUrl(settings.company_logo_url || '');
+    setCategoriesStr(settings.categories.join(', '));
+    setCalculationRule(settings.calculation_rule);
+    setIsWeeklyOffPaid(settings.is_weekly_off_paid);
+  }, [settings]);
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -55,6 +67,7 @@ export const SettingsPage: React.FC = () => {
     e.preventDefault();
     setIsSaving(true);
     setSavedSuccess(false);
+    setSaveError('');
 
     const categoriesArray = categoriesStr
       .split(',')
@@ -74,6 +87,13 @@ export const SettingsPage: React.FC = () => {
 
       setSavedSuccess(true);
       setTimeout(() => setSavedSuccess(false), 3000);
+    } catch (error) {
+      const message = error instanceof Error
+        ? error.message
+        : typeof error === 'object' && error !== null && 'message' in error
+          ? String(error.message)
+          : 'Could not save system settings.';
+      setSaveError(message);
     } finally {
       setIsSaving(false);
     }
@@ -156,7 +176,7 @@ export const SettingsPage: React.FC = () => {
         {/* Salary & Attendance Rules */}
         <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-soft space-y-4">
           <div className="flex items-center gap-2 pb-3 border-b border-slate-100 text-indigo-700">
-            <DollarSign className="w-5 h-5" />
+            <IndianRupee className="w-5 h-5" />
             <h3 className="font-bold text-slate-900 text-sm">Payroll & Attendance Computation Rules</h3>
           </div>
 
@@ -293,6 +313,7 @@ export const SettingsPage: React.FC = () => {
             Save System Settings
           </Button>
         </div>
+        {saveError && <p role="alert" className="text-sm font-medium text-rose-600">Settings were not saved: {saveError}</p>}
       </form>
     </div>
   );

@@ -8,13 +8,14 @@ import { Button } from '../components/common/Button';
 import { SalaryTransaction } from '../types';
 import { formatINR, formatMonthName } from '../lib/utils';
 import { exportTransactionsToExcel } from '../lib/export';
-import { PlusCircle, Download, ArrowDownRight, CheckCircle2, Wallet } from 'lucide-react';
+import { PlusCircle, Download, ArrowDownRight, CheckCircle2, Wallet, Users } from 'lucide-react';
 
 export const PaymentsPage: React.FC = () => {
   const { selectedMonth } = useSettings();
   const { employees } = useEmployees();
   const {
     transactions,
+    isLoading: transactionsLoading,
     addTransaction,
     updateTransaction,
     deleteTransaction,
@@ -35,6 +36,12 @@ export const PaymentsPage: React.FC = () => {
   const totalBonuses = transactions
     .filter((t) => t.transaction_type === 'bonus')
     .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  const employeesPaid = new Set(
+    transactions
+      .filter((transaction) => transaction.transaction_type === 'salary_payment' && Number(transaction.amount) > 0)
+      .map((transaction) => transaction.employee_id)
+  ).size;
 
   const handleEdit = (tx: SalaryTransaction) => {
     setEditingTransaction(tx);
@@ -84,7 +91,7 @@ export const PaymentsPage: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-amber-100 shadow-soft flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-amber-700">
@@ -119,6 +126,21 @@ export const PaymentsPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="bg-white p-5 rounded-2xl border border-indigo-100 shadow-soft flex items-center justify-between">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-700">
+              Employees Paid
+            </span>
+            <h3 className="text-2xl font-black text-slate-900 mt-1">{employeesPaid}</h3>
+            <span className="text-xs text-slate-400 mt-0.5 block">
+              Unique drivers with a salary payment this month
+            </span>
+          </div>
+          <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600">
+            <Users className="w-6 h-6" />
+          </div>
+        </div>
+
         <div className="bg-white p-5 rounded-2xl border border-purple-100 shadow-soft flex items-center justify-between">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-purple-700">
@@ -143,6 +165,7 @@ export const PaymentsPage: React.FC = () => {
         employees={employees}
         onEdit={handleEdit}
         onDelete={deleteTransaction}
+        isLoading={transactionsLoading}
       />
 
       {/* Add / Edit Transaction Modal */}

@@ -12,6 +12,7 @@ interface PaymentHistoryTableProps {
   employees: Employee[];
   onEdit: (tx: SalaryTransaction) => void;
   onDelete: (id: string) => Promise<any>;
+  isLoading?: boolean;
 }
 
 export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
@@ -19,6 +20,7 @@ export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
   employees,
   onEdit,
   onDelete,
+  isLoading = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -104,7 +106,7 @@ export const PaymentHistoryTable: React.FC<PaymentHistoryTableProps> = ({
             {filtered.length === 0 ? (
               <tr>
                 <td colSpan={8} className="py-12 text-center text-slate-400">
-                  No transaction records found.
+                  {isLoading ? 'Loading transactions…' : 'No transaction records found.'}
                 </td>
               </tr>
             ) : (
