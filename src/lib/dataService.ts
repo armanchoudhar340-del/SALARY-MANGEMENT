@@ -209,7 +209,11 @@ export const dataService = {
     if (isSupabaseConfigured && supabase) {
       let query = supabase.from('attendance').select('*').order('date', { ascending: false });
       if (monthStr) {
-        query = query.gte('date', `${monthStr}-01`).lte('date', `${monthStr}-31`);
+        const monthStart = new Date(`${monthStr}-01T00:00:00.000Z`);
+        const nextMonthStart = new Date(monthStart);
+        nextMonthStart.setUTCMonth(nextMonthStart.getUTCMonth() + 1);
+        const nextMonthDate = nextMonthStart.toISOString().slice(0, 10);
+        query = query.gte('date', `${monthStr}-01`).lt('date', nextMonthDate);
       }
       const { data, error } = await query;
       if (!error && data) {
