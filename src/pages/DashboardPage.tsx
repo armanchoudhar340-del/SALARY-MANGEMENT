@@ -17,6 +17,7 @@ import { Button } from '../components/common/Button';
 import { Skeleton } from '../components/common/Skeleton';
 import { Employee, SalaryTransaction } from '../types';
 import { formatMonthName } from '../lib/utils';
+import { calculateSalaryBalanceToDate } from '../lib/calculation';
 import {
   UserPlus,
   PlusCircle,
@@ -69,8 +70,10 @@ export const DashboardPage: React.FC = () => {
         } else if (sortBy === 'salary') {
           return b.monthly_salary - a.monthly_salary;
         } else if (sortBy === 'remaining') {
-          const remA = salaryRecordMap.get(a.id)?.remaining_balance ?? 0;
-          const remB = salaryRecordMap.get(b.id)?.remaining_balance ?? 0;
+          const recordA = salaryRecordMap.get(a.id);
+          const recordB = salaryRecordMap.get(b.id);
+          const remA = recordA ? calculateSalaryBalanceToDate(a, recordA) : 0;
+          const remB = recordB ? calculateSalaryBalanceToDate(b, recordB) : 0;
           return remB - remA;
         }
         return 0;

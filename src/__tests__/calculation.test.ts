@@ -5,6 +5,7 @@ import {
   calculateEmploymentDuration,
   computeEmployeeSalary,
   roundCurrency,
+  calculateSalaryBalanceToDate,
 } from '../lib/calculation';
 import { Employee, AttendanceRecord, SalaryTransaction, SalarySettings } from '../types';
 
@@ -68,6 +69,13 @@ describe('Salary Calculation Engine & Financial Accuracy', () => {
     const duration = calculateEmploymentDuration('2025-01-01', null, fixedNow);
     expect(duration).toContain('1 year');
     expect(duration).toContain('month');
+  });
+
+  it('adds completed monthly salary periods to the current-month net balance', () => {
+    const employee = { ...sampleEmployee, joining_date: '2026-10-20', monthly_salary: 20020 };
+    const record = { salary_month: '2026-11', remaining_balance: -13000 };
+    expect(calculateSalaryBalanceToDate(employee, record)).toBe(7020);
+    expect(calculateSalaryBalanceToDate(employee, { ...record, remaining_balance: -21000 })).toBe(-980);
   });
 
   it('4. Handles Daily Rate = Monthly Salary / Calendar Days', () => {

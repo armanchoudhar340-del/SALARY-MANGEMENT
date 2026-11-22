@@ -13,6 +13,7 @@ import { Input } from '../components/common/Input';
 import { Skeleton } from '../components/common/Skeleton';
 import { Employee } from '../types';
 import { formatINR, formatMonthName } from '../lib/utils';
+import { calculateSalaryBalanceToDate } from '../lib/calculation';
 import { exportSalaryReportToExcel, exportSalaryReportToPDF } from '../lib/export';
 import {
   RotateCcw,
@@ -56,7 +57,8 @@ export const MonthlySalaryPage: React.FC = () => {
 
     records.forEach((r) => {
       totalEarned += r.earned_salary;
-      totalRemaining += Math.max(0, r.remaining_balance);
+      const employee = employeesMap.get(r.employee_id);
+      totalRemaining += Math.max(0, employee ? calculateSalaryBalanceToDate(employee, r) : r.remaining_balance);
     });
 
     const totalAdvances = transactions
@@ -72,7 +74,7 @@ export const MonthlySalaryPage: React.FC = () => {
       totalPaid,
       totalRemaining,
     };
-  }, [records, transactions]);
+  }, [records, transactions, employeesMap]);
 
   const filteredEmployees = useMemo(() => {
     return employees
@@ -146,7 +148,7 @@ export const MonthlySalaryPage: React.FC = () => {
       {employees.some((employee) => employee.is_active) && attendance.length === 0 && (
         <div role="status" className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           <AlertCircle className="mt-0.5 h-5 w-5 shrink-0" />
-          <p>No attendance is recorded for {formatMonthName(selectedMonth)}. Earned salary and salary due remain ₹0 until attendance is marked.</p>
+          <p>No attendance is recorded for {formatMonthName(selectedMonth)}. This month’s attendance-based earnings are ₹0; any completed monthly salary periods still appear in each driver’s balance.</p>
         </div>
       )}
 

@@ -68,9 +68,7 @@ export const QuickStats: React.FC<QuickStatsProps> = ({ stats, onNavigate }) => 
         <StatCard
           title="Total Salary Left to Pay"
           value={formatINR(stats.totalRemainingSalary)}
-          subtitle={stats.attendanceRecordCount === 0
-            ? 'Mark attendance to calculate salary due'
-            : 'Due from attendance recorded this month'}
+          subtitle="Completed monthly salary + this month's attendance, minus payments"
           icon={<AlertTriangle className="w-5 h-5" />}
           accentColor="rose"
           onClick={() => onNavigate?.('salary')}

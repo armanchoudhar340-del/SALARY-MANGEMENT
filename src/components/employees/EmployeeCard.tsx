@@ -1,7 +1,7 @@
 import React from 'react';
 import { Employee, MonthlySalaryRecord } from '../../types';
 import { formatINR, formatDate } from '../../lib/utils';
-import { calculateCompletedServiceMonths, calculateEmploymentDuration } from '../../lib/calculation';
+import { calculateCompletedServiceMonths, calculateEmploymentDuration, calculateSalaryBalanceToDate } from '../../lib/calculation';
 import {
   Calendar,
   Clock,
@@ -40,10 +40,11 @@ export const EmployeeCard: React.FC<EmployeeCardProps> = ({
   const earnedSalary = salaryRecord?.earned_salary ?? 0;
   const advances = salaryRecord?.total_advances ?? 0;
   const salaryPaid = salaryRecord?.total_salary_paid ?? 0;
-  const remaining = salaryRecord?.remaining_balance ?? 0;
   const completedMonths = salaryRecord
     ? calculateCompletedServiceMonths(employee.joining_date, salaryRecord.salary_month, employee.leaving_date)
     : 0;
+  // Completed monthly salary periods accrue even when this month has no attendance yet.
+  const remaining = salaryRecord ? calculateSalaryBalanceToDate(employee, salaryRecord) : 0;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 shadow-soft hover:shadow-premium hover:-translate-y-0.5 transition-all duration-300 flex flex-col justify-between overflow-hidden">

@@ -1,4 +1,4 @@
-import { AttendanceRecord, Employee, SalarySettings, SalaryTransaction } from '../types';
+import { AttendanceRecord, Employee, MonthlySalaryRecord, SalarySettings, SalaryTransaction } from '../types';
 
 /**
  * Returns number of calendar days in a given year and month (1-indexed month 1-12)
@@ -123,6 +123,17 @@ export function calculateCompletedServiceMonths(
   months += reference.getMonth() - joining.getMonth();
   if (reference.getDate() < joining.getDate()) months -= 1;
   return Math.max(0, months);
+}
+
+/** Current balance includes completed monthly salary periods plus this month's payroll result. */
+export function calculateSalaryBalanceToDate(
+  employee: Employee,
+  record: Pick<MonthlySalaryRecord, 'salary_month' | 'remaining_balance'>
+): number {
+  const completedBaseSalary = employee.salary_type === 'monthly'
+    ? employee.monthly_salary * calculateCompletedServiceMonths(employee.joining_date, record.salary_month, employee.leaving_date)
+    : 0;
+  return roundCurrency(record.remaining_balance + completedBaseSalary);
 }
 
 export interface CalculatedMonthlySalary {

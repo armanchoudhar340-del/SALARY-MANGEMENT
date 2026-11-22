@@ -11,6 +11,7 @@ import {
 } from 'recharts';
 import { MonthlySalaryRecord, Employee } from '../../types';
 import { formatINR } from '../../lib/utils';
+import { calculateSalaryBalanceToDate } from '../../lib/calculation';
 
 interface SalaryChartProps {
   records: MonthlySalaryRecord[];
@@ -20,14 +21,17 @@ interface SalaryChartProps {
 export const SalaryChart: React.FC<SalaryChartProps> = ({ records, employees }) => {
   const employeeMap = new Map(employees.map((e) => [e.id, e.full_name]));
 
-  const chartData = records.slice(0, 8).map((rec) => ({
-    name: (employeeMap.get(rec.employee_id) || 'Emp').split(' ')[0],
-    fullName: employeeMap.get(rec.employee_id) || 'Employee',
-    Earned: rec.earned_salary,
-    Advances: rec.total_advances,
-    Paid: rec.total_salary_paid,
-    Remaining: Math.max(0, rec.remaining_balance),
-  }));
+  const chartData = records.slice(0, 8).map((rec) => {
+    const employee = employees.find((item) => item.id === rec.employee_id);
+    return {
+      name: (employeeMap.get(rec.employee_id) || 'Emp').split(' ')[0],
+      fullName: employeeMap.get(rec.employee_id) || 'Employee',
+      Earned: rec.earned_salary,
+      Advances: rec.total_advances,
+      Paid: rec.total_salary_paid,
+      Remaining: Math.max(0, employee ? calculateSalaryBalanceToDate(employee, rec) : rec.remaining_balance),
+    };
+  });
 
   if (chartData.length === 0) {
     return (

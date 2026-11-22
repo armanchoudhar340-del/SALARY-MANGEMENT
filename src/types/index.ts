@@ -63,6 +63,7 @@ export interface FuelLog {
   start_km: number;
   end_km: number;
   fuel_litres: number;
+  fuel_type: 'petrol' | 'diesel' | 'cng' | null;
   amount: number;
   notes?: string | null;
   created_at: string;

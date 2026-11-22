@@ -12,6 +12,7 @@ interface FuelFormState {
   start_km: string;
   end_km: string;
   fuel_litres: string;
+  fuel_type: 'petrol' | 'diesel' | 'cng' | '';
   amount: string;
   notes: string;
 }
@@ -23,6 +24,7 @@ const initialForm: FuelFormState = {
   start_km: '',
   end_km: '',
   fuel_litres: '',
+  fuel_type: '',
   amount: '',
   notes: '',
 };
@@ -66,6 +68,7 @@ export const FuelPage: React.FC = () => {
         start_km: startKm,
         end_km: endKm,
         fuel_litres: litres,
+        fuel_type: form.fuel_type || null,
         amount,
         notes: form.notes.trim() || null,
       });
@@ -103,6 +106,7 @@ export const FuelPage: React.FC = () => {
           <label className="space-y-1 text-xs font-semibold text-slate-600">Driver (optional)<select className={fieldClass} value={form.employee_id} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}><option value="">Select driver</option>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.full_name}</option>)}</select></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Vehicle number<input className={fieldClass} value={form.vehicle_number} onChange={(e) => setForm({ ...form, vehicle_number: e.target.value })} placeholder="e.g. MH 12 AB 1234" required /></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Fuel filled (litres)<input className={fieldClass} type="number" min="0.01" step="0.01" value={form.fuel_litres} onChange={(e) => setForm({ ...form, fuel_litres: e.target.value })} required /></label>
+          <label className="space-y-1 text-xs font-semibold text-slate-600">Fuel type<select className={fieldClass} value={form.fuel_type} onChange={(e) => setForm({ ...form, fuel_type: e.target.value as FuelFormState['fuel_type'] })} required><option value="">Select fuel type</option><option value="petrol">Petrol</option><option value="diesel">Diesel</option><option value="cng">CNG</option></select></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Start kilometer<input className={fieldClass} type="number" min="0" step="1" value={form.start_km} onChange={(e) => setForm({ ...form, start_km: e.target.value })} placeholder="22000" required /></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">End kilometer<input className={fieldClass} type="number" min="0" step="1" value={form.end_km} onChange={(e) => setForm({ ...form, end_km: e.target.value })} placeholder="22300" required /></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Fuel cost (₹)<input className={fieldClass} type="number" min="0" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required /></label>
@@ -122,9 +126,16 @@ export const FuelPage: React.FC = () => {
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft">
         <div className="border-b border-slate-100 px-4 py-3"><h3 className="font-bold text-slate-900">Fuel statement</h3></div>
         {isLoading ? <p className="p-5 text-sm text-slate-500">Loading fuel records…</p> : fuelLogs.length === 0 ? <p className="p-5 text-sm text-slate-500">No fuel entries recorded yet.</p> : (
-          <div className="overflow-x-auto">
+          <>
+          <div className="space-y-3 p-3 sm:hidden">{fuelLogs.map((log) => (
+            <article key={log.id} className="rounded-xl border border-slate-200 p-3 text-sm">
+              <div className="flex items-start justify-between gap-2"><div><p className="font-bold text-slate-900">{log.vehicle_number}</p><p className="text-xs text-slate-500">{formatDate(log.date)} · {employees.find((employee) => employee.id === log.employee_id)?.full_name || 'No driver selected'}</p></div><span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold uppercase text-purple-700">{log.fuel_type || 'Unspecified'}</span></div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs"><p><span className="text-slate-500">Odometer</span><br /><strong>{Number(log.start_km).toLocaleString('en-IN')} → {Number(log.end_km).toLocaleString('en-IN')} km</strong></p><p><span className="text-slate-500">Distance</span><br /><strong>{Math.max(0, Number(log.end_km) - Number(log.start_km)).toLocaleString('en-IN')} km</strong></p><p><span className="text-slate-500">Fuel</span><br /><strong>{Number(log.fuel_litres).toLocaleString('en-IN')} L</strong></p><p><span className="text-slate-500">Cost</span><br /><strong>{formatINR(Number(log.amount))}</strong></p></div>
+            </article>
+          ))}</div>
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Vehicle</th><th className="px-4 py-3">Driver</th><th className="px-4 py-3">Start → End</th><th className="px-4 py-3">Distance</th><th className="px-4 py-3">Fuel</th><th className="px-4 py-3">Cost</th></tr></thead>
+              <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Vehicle</th><th className="px-4 py-3">Driver</th><th className="px-4 py-3">Start → End</th><th className="px-4 py-3">Distance</th><th className="px-4 py-3">Fuel type</th><th className="px-4 py-3">Fuel</th><th className="px-4 py-3">Cost</th></tr></thead>
               <tbody className="divide-y divide-slate-100">{fuelLogs.map((log) => (
                 <tr key={log.id}>
                   <td className="px-4 py-3">{formatDate(log.date)}</td>
@@ -132,12 +143,14 @@ export const FuelPage: React.FC = () => {
                   <td className="px-4 py-3">{employees.find((employee) => employee.id === log.employee_id)?.full_name || '—'}</td>
                   <td className="px-4 py-3">{Number(log.start_km).toLocaleString('en-IN')} → {Number(log.end_km).toLocaleString('en-IN')} km</td>
                   <td className="px-4 py-3">{Math.max(0, Number(log.end_km) - Number(log.start_km)).toLocaleString('en-IN')} km</td>
+                  <td className="px-4 py-3 uppercase">{log.fuel_type || 'Unspecified'}</td>
                   <td className="px-4 py-3">{Number(log.fuel_litres).toLocaleString('en-IN')} L</td>
                   <td className="px-4 py-3 font-semibold">{formatINR(Number(log.amount))}</td>
                 </tr>
               ))}</tbody>
             </table>
           </div>
+          </>
         )}
       </section>
     </div>

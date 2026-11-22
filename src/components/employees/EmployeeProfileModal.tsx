@@ -4,7 +4,7 @@ import { Button } from '../common/Button';
 import { Badge } from '../common/Badge';
 import { Employee, MonthlySalaryRecord, SalaryTransaction, AttendanceRecord } from '../../types';
 import { formatINR, formatDate, formatMonthName } from '../../lib/utils';
-import { calculateEmploymentDuration } from '../../lib/calculation';
+import { calculateEmploymentDuration, calculateSalaryBalanceToDate } from '../../lib/calculation';
 import { exportEmployeeSalarySlipPDF } from '../../lib/export';
 import { useSettings } from '../../context/SettingsContext';
 import {
@@ -54,6 +54,7 @@ export const EmployeeProfileModal: React.FC<EmployeeProfileModalProps> = ({
   const empAttendance = attendance.filter((a) => a.employee_id === employee.id);
 
   const currentRecord = empMonthlyRecords.find((r) => r.salary_month === selectedMonth);
+  const currentBalance = currentRecord ? calculateSalaryBalanceToDate(employee, currentRecord) : 0;
 
   const handleDownloadSlip = () => {
     if (currentRecord) {
@@ -221,8 +222,8 @@ export const EmployeeProfileModal: React.FC<EmployeeProfileModalProps> = ({
                   <h4 className="text-sm font-bold text-purple-950">
                     Active Month Status ({formatMonthName(selectedMonth)})
                   </h4>
-                  <Badge variant={currentRecord.remaining_balance <= 0 ? 'success' : 'warning'}>
-                    {currentRecord.status.toUpperCase()}
+                  <Badge variant={currentBalance < 0 ? 'danger' : currentBalance > 0 ? 'warning' : 'success'}>
+                    {currentBalance < 0 ? 'OVERPAID' : currentBalance > 0 ? 'DUE' : 'SETTLED'}
                   </Badge>
                 </div>
 
@@ -248,7 +249,7 @@ export const EmployeeProfileModal: React.FC<EmployeeProfileModalProps> = ({
                   <div className="bg-white p-2.5 rounded-xl border border-purple-100">
                     <span className="text-xs text-slate-500 block">Total Salary Left</span>
                     <span className="text-sm font-bold text-purple-700">
-                      {formatINR(currentRecord.remaining_balance)}
+                      <span className={currentBalance < 0 ? 'text-rose-600' : currentBalance > 0 ? 'text-emerald-600' : 'text-slate-600'}>{formatINR(currentBalance)}</span>
                     </span>
                   </div>
                 </div>

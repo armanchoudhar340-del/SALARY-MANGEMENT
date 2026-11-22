@@ -14,7 +14,7 @@ import {
   INITIAL_TRANSACTIONS,
   generateSampleAttendance,
 } from './mockData';
-import { computeEmployeeSalary } from './calculation';
+import { calculateSalaryBalanceToDate, computeEmployeeSalary } from './calculation';
 import { getCurrentMonthString, getTodayDateString } from './utils';
 
 // Local storage keys
@@ -582,7 +582,10 @@ export const dataService = {
         settings,
       });
 
-      totalRemainingSalary += Math.max(0, calc.remainingBalance);
+      totalRemainingSalary += Math.max(0, calculateSalaryBalanceToDate(emp, {
+        salary_month: selectedMonth,
+        remaining_balance: calc.remainingBalance,
+      }));
     });
 
     // Today's attendance counts
