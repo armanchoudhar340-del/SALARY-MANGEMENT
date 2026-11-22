@@ -39,11 +39,14 @@ export const FuelPage: React.FC = () => {
   const totals = useMemo(() => fuelLogs.reduce(
     (summary, log) => ({
       distance: summary.distance + Math.max(0, Number(log.end_km) - Number(log.start_km)),
-      litres: summary.litres + Number(log.fuel_litres || 0),
+      litres: summary.litres + (log.fuel_type === 'cng' ? 0 : Number(log.fuel_litres || 0)),
+      cngKg: summary.cngKg + (log.fuel_type === 'cng' ? Number(log.fuel_litres || 0) : 0),
       amount: summary.amount + Number(log.amount || 0),
     }),
-    { distance: 0, litres: 0, amount: 0 }
+    { distance: 0, litres: 0, cngKg: 0, amount: 0 }
   ), [fuelLogs]);
+
+  const fuelUnit = form.fuel_type === 'cng' ? 'kg' : 'litres';
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
@@ -95,7 +98,7 @@ export const FuelPage: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <SummaryCard label="Distance Recorded" value={`${totals.distance.toLocaleString('en-IN')} km`} icon={<Route className="h-5 w-5" />} />
-        <SummaryCard label="Fuel Filled" value={`${totals.litres.toLocaleString('en-IN')} L`} icon={<Fuel className="h-5 w-5" />} />
+        <SummaryCard label="Fuel Filled" value={`${totals.litres.toLocaleString('en-IN')} L · ${totals.cngKg.toLocaleString('en-IN')} kg CNG`} icon={<Fuel className="h-5 w-5" />} />
         <SummaryCard label="Fuel Cost" value={formatINR(totals.amount)} icon={<IndianRupee className="h-5 w-5" />} />
       </div>
 
@@ -105,8 +108,8 @@ export const FuelPage: React.FC = () => {
           <label className="space-y-1 text-xs font-semibold text-slate-600">Date<input className={fieldClass} type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required /></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Driver (optional)<select className={fieldClass} value={form.employee_id} onChange={(e) => setForm({ ...form, employee_id: e.target.value })}><option value="">Select driver</option>{employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.full_name}</option>)}</select></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Vehicle number<input className={fieldClass} value={form.vehicle_number} onChange={(e) => setForm({ ...form, vehicle_number: e.target.value })} placeholder="e.g. MH 12 AB 1234" required /></label>
-          <label className="space-y-1 text-xs font-semibold text-slate-600">Fuel filled (litres)<input className={fieldClass} type="number" min="0.01" step="0.01" value={form.fuel_litres} onChange={(e) => setForm({ ...form, fuel_litres: e.target.value })} required /></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Fuel type<select className={fieldClass} value={form.fuel_type} onChange={(e) => setForm({ ...form, fuel_type: e.target.value as FuelFormState['fuel_type'] })} required><option value="">Select fuel type</option><option value="petrol">Petrol</option><option value="diesel">Diesel</option><option value="cng">CNG</option></select></label>
+          <label className="space-y-1 text-xs font-semibold text-slate-600">Fuel filled ({fuelUnit})<input className={fieldClass} type="number" min="0.01" step="0.01" value={form.fuel_litres} onChange={(e) => setForm({ ...form, fuel_litres: e.target.value })} required /></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Start kilometer<input className={fieldClass} type="number" min="0" step="1" value={form.start_km} onChange={(e) => setForm({ ...form, start_km: e.target.value })} placeholder="22000" required /></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">End kilometer<input className={fieldClass} type="number" min="0" step="1" value={form.end_km} onChange={(e) => setForm({ ...form, end_km: e.target.value })} placeholder="22300" required /></label>
           <label className="space-y-1 text-xs font-semibold text-slate-600">Fuel cost (₹)<input className={fieldClass} type="number" min="0" step="0.01" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} required /></label>
@@ -130,7 +133,7 @@ export const FuelPage: React.FC = () => {
           <div className="space-y-3 p-3 sm:hidden">{fuelLogs.map((log) => (
             <article key={log.id} className="rounded-xl border border-slate-200 p-3 text-sm">
               <div className="flex items-start justify-between gap-2"><div><p className="font-bold text-slate-900">{log.vehicle_number}</p><p className="text-xs text-slate-500">{formatDate(log.date)} · {employees.find((employee) => employee.id === log.employee_id)?.full_name || 'No driver selected'}</p></div><span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold uppercase text-purple-700">{log.fuel_type || 'Unspecified'}</span></div>
-              <div className="mt-3 grid grid-cols-2 gap-2 text-xs"><p><span className="text-slate-500">Odometer</span><br /><strong>{Number(log.start_km).toLocaleString('en-IN')} → {Number(log.end_km).toLocaleString('en-IN')} km</strong></p><p><span className="text-slate-500">Distance</span><br /><strong>{Math.max(0, Number(log.end_km) - Number(log.start_km)).toLocaleString('en-IN')} km</strong></p><p><span className="text-slate-500">Fuel</span><br /><strong>{Number(log.fuel_litres).toLocaleString('en-IN')} L</strong></p><p><span className="text-slate-500">Cost</span><br /><strong>{formatINR(Number(log.amount))}</strong></p></div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-xs"><p><span className="text-slate-500">Odometer</span><br /><strong>{Number(log.start_km).toLocaleString('en-IN')} → {Number(log.end_km).toLocaleString('en-IN')} km</strong></p><p><span className="text-slate-500">Distance</span><br /><strong>{Math.max(0, Number(log.end_km) - Number(log.start_km)).toLocaleString('en-IN')} km</strong></p><p><span className="text-slate-500">Fuel</span><br /><strong>{Number(log.fuel_litres).toLocaleString('en-IN')} {log.fuel_type === 'cng' ? 'kg' : 'L'}</strong></p><p><span className="text-slate-500">Cost</span><br /><strong>{formatINR(Number(log.amount))}</strong></p></div>
             </article>
           ))}</div>
           <div className="hidden overflow-x-auto sm:block">
@@ -144,7 +147,7 @@ export const FuelPage: React.FC = () => {
                   <td className="px-4 py-3">{Number(log.start_km).toLocaleString('en-IN')} → {Number(log.end_km).toLocaleString('en-IN')} km</td>
                   <td className="px-4 py-3">{Math.max(0, Number(log.end_km) - Number(log.start_km)).toLocaleString('en-IN')} km</td>
                   <td className="px-4 py-3 uppercase">{log.fuel_type || 'Unspecified'}</td>
-                  <td className="px-4 py-3">{Number(log.fuel_litres).toLocaleString('en-IN')} L</td>
+                  <td className="px-4 py-3">{Number(log.fuel_litres).toLocaleString('en-IN')} {log.fuel_type === 'cng' ? 'kg' : 'L'}</td>
                   <td className="px-4 py-3 font-semibold">{formatINR(Number(log.amount))}</td>
                 </tr>
               ))}</tbody>
