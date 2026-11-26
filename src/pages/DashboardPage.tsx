@@ -57,6 +57,7 @@ export const DashboardPage: React.FC = () => {
   const displayedEmployees = useMemo(() => {
     return employees
       .filter((emp) => {
+        if (!emp.is_active) return false;
         const matchesSearch =
           emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
           emp.mobile_number.includes(searchTerm);

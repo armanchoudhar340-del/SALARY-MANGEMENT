@@ -33,6 +33,7 @@ export function useAttendance(monthStr?: string) {
 
   return {
     ...query,
+    error: query.error || markAttendanceMutation.error || bulkMarkMutation.error,
     attendance: query.data || [],
     markAttendance: markAttendanceMutation.mutateAsync,
     isMarking: markAttendanceMutation.isPending,

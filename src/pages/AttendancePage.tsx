@@ -4,7 +4,7 @@ import { useAttendance } from '../hooks/useAttendance';
 import { useSettings } from '../context/SettingsContext';
 import { DailyAttendanceSheet } from '../components/attendance/DailyAttendanceSheet';
 import { AttendanceCalendar } from '../components/attendance/AttendanceCalendar';
-import { formatMonthName } from '../lib/utils';
+import { formatMonthName, getTodayDateString } from '../lib/utils';
 import { exportAttendanceToExcel, exportAttendanceToPDF } from '../lib/export';
 import { CalendarCheck, CalendarDays, FileSpreadsheet, FileText } from 'lucide-react';
 import { Button } from '../components/common/Button';
@@ -12,10 +12,12 @@ import { Button } from '../components/common/Button';
 export const AttendancePage: React.FC = () => {
   const { selectedMonth } = useSettings();
   const { employees } = useEmployees();
-  const { attendance, markAttendance, bulkMarkAttendance, isMarking, isBulkMarking } =
-    useAttendance(selectedMonth);
-
+  const [dailyDate, setDailyDate] = useState(getTodayDateString());
   const [activeTab, setActiveTab] = useState<'daily' | 'calendar'>('daily');
+  const monthAttendance = useAttendance(selectedMonth);
+  const dailyAttendance = useAttendance(dailyDate.slice(0, 7));
+  const attendance = activeTab === 'daily' ? dailyAttendance.attendance : monthAttendance.attendance;
+  const error = dailyAttendance.error;
 
   const handleDownloadExcel = () => {
     exportAttendanceToExcel(employees, attendance, selectedMonth);
@@ -108,9 +110,12 @@ export const AttendancePage: React.FC = () => {
         <DailyAttendanceSheet
           employees={employees}
           attendanceRecords={attendance}
-          onMarkAttendance={markAttendance}
-          onBulkMark={bulkMarkAttendance}
-          isMarking={isMarking || isBulkMarking}
+          onMarkAttendance={dailyAttendance.markAttendance}
+          onBulkMark={dailyAttendance.bulkMarkAttendance}
+          isMarking={dailyAttendance.isMarking || dailyAttendance.isBulkMarking}
+          selectedDate={dailyDate}
+          onSelectedDateChange={setDailyDate}
+          saveError={error instanceof Error ? error.message : ''}
         />
       ) : (
         <AttendanceCalendar

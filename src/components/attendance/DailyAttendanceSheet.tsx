@@ -22,6 +22,9 @@ interface DailyAttendanceSheetProps {
   onMarkAttendance: (rec: Omit<AttendanceRecord, 'id' | 'created_at' | 'updated_at'>) => Promise<any>;
   onBulkMark: (recs: Omit<AttendanceRecord, 'id' | 'created_at' | 'updated_at'>[]) => Promise<any>;
   isMarking?: boolean;
+  selectedDate: string;
+  onSelectedDateChange: (date: string) => void;
+  saveError?: string;
 }
 
 const STATUS_BUTTONS: { status: AttendanceStatus; label: string; icon: any; colorClass: string; activeClass: string }[] = [
@@ -68,8 +71,10 @@ export const DailyAttendanceSheet: React.FC<DailyAttendanceSheetProps> = ({
   onMarkAttendance,
   onBulkMark,
   isMarking,
+  selectedDate,
+  onSelectedDateChange,
+  saveError,
 }) => {
-  const [selectedDate, setSelectedDate] = useState<string>(getTodayDateString());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
@@ -160,7 +165,7 @@ export const DailyAttendanceSheet: React.FC<DailyAttendanceSheetProps> = ({
             <input
               type="date"
               value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
+              onChange={(e) => onSelectedDateChange(e.target.value)}
               className="text-base font-bold text-slate-900 border-0 p-0 focus:ring-0 cursor-pointer bg-transparent"
             />
           </div>
@@ -170,9 +175,20 @@ export const DailyAttendanceSheet: React.FC<DailyAttendanceSheetProps> = ({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setSelectedDate(getTodayDateString())}
+            onClick={() => onSelectedDateChange(getTodayDateString())}
           >
             Today
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const date = new Date(`${selectedDate}T12:00:00`);
+              date.setDate(date.getDate() - 1);
+              onSelectedDateChange(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`);
+            }}
+          >
+            Yesterday
           </Button>
 
           <Button
@@ -186,6 +202,8 @@ export const DailyAttendanceSheet: React.FC<DailyAttendanceSheetProps> = ({
           </Button>
         </div>
       </div>
+
+      {saveError && <p role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">Attendance could not be saved: {saveError}</p>}
 
       {/* Daily Summary Statistics Pills */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
@@ -327,6 +345,9 @@ export const DailyAttendanceSheet: React.FC<DailyAttendanceSheetProps> = ({
                     return (
                       <button
                         key={btn.status}
+                        type="button"
+                        disabled={isMarking}
+                        aria-pressed={isSelected}
                         onClick={() => handleTapStatus(emp.id, btn.status)}
                         className={`flex items-center justify-center gap-1 py-1.5 px-2.5 rounded-xl text-xs font-semibold border transition-all duration-150 ${
                           isSelected ? btn.activeClass : btn.colorClass
