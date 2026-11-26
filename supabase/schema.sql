@@ -251,6 +251,8 @@ CREATE TABLE IF NOT EXISTS public.fuel_logs (
     start_km NUMERIC(12, 1) NOT NULL CHECK (start_km >= 0),
     end_km NUMERIC(12, 1) NOT NULL CHECK (end_km >= start_km),
     fuel_litres NUMERIC(10, 2) NOT NULL CHECK (fuel_litres > 0),
+    fuel_type TEXT CHECK (fuel_type IS NULL OR fuel_type IN ('petrol', 'diesel', 'cng')),
+    use TEXT,
     amount NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0),
     notes TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),

@@ -444,6 +444,16 @@ export const dataService = {
     return record;
   },
 
+  async deleteFuelLog(id: string): Promise<boolean> {
+    if (isSupabaseConfigured && supabase) {
+      const { error } = await supabase.from('fuel_logs').delete().eq('id', id);
+      if (error) throw error;
+    }
+    const logs = loadLocal<FuelLog[]>(STORAGE_KEYS.FUEL_LOGS, []);
+    saveLocal(STORAGE_KEYS.FUEL_LOGS, logs.filter((log) => log.id !== id));
+    return true;
+  },
+
   // --------------------------------------------------------------------------
   // Monthly Salary Records (Snapshots & Generation)
   // --------------------------------------------------------------------------

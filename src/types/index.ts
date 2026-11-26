@@ -65,6 +65,7 @@ export interface FuelLog {
   fuel_litres: number;
   fuel_type: 'petrol' | 'diesel' | 'cng' | null;
   amount: number;
+  use?: string | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;

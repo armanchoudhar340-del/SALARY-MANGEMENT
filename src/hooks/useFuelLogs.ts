@@ -18,10 +18,19 @@ export function useFuelLogs() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => dataService.deleteFuelLog(id),
+    onSuccess: (_result, id) => {
+      queryClient.setQueryData<FuelLog[]>(['fuel-logs'], (current) => (current || []).filter((log) => log.id !== id));
+    },
+  });
+
   return {
     ...query,
     fuelLogs: query.data || [],
     addFuelLog: addMutation.mutateAsync,
     isAdding: addMutation.isPending,
+    deleteFuelLog: deleteMutation.mutateAsync,
+    isDeleting: deleteMutation.isPending,
   };
 }
