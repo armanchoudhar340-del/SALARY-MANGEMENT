@@ -39,10 +39,17 @@ export const FuelPage: React.FC = () => {
   const [form, setForm] = useState(initialForm);
   const [formError, setFormError] = useState('');
   const [savedMessage, setSavedMessage] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
 
   const monthFuelLogs = useMemo(() => fuelLogs.filter((log) => log.date.startsWith(`${selectedMonth}-`)), [fuelLogs, selectedMonth]);
+  const availableDates = useMemo(() => [...new Set(monthFuelLogs.map((log) => log.date))].sort((a, b) => b.localeCompare(a)), [monthFuelLogs]);
+  const activeDateFilter = dateFilter.startsWith(`${selectedMonth}-`) ? dateFilter : '';
+  const filteredFuelLogs = useMemo(
+    () => activeDateFilter ? monthFuelLogs.filter((log) => log.date === activeDateFilter) : monthFuelLogs,
+    [monthFuelLogs, activeDateFilter]
+  );
 
-  const totals = useMemo(() => monthFuelLogs.reduce(
+  const totals = useMemo(() => filteredFuelLogs.reduce(
     (summary, log) => ({
       distance: summary.distance + Math.max(0, Number(log.end_km) - Number(log.start_km)),
       dieselLitres: summary.dieselLitres + (log.fuel_type === 'diesel' ? Number(log.fuel_litres || 0) : 0),
@@ -51,7 +58,7 @@ export const FuelPage: React.FC = () => {
       amount: summary.amount + Number(log.amount || 0),
     }),
     { distance: 0, dieselLitres: 0, otherLitres: 0, cngKg: 0, amount: 0 }
-  ), [monthFuelLogs]);
+  ), [filteredFuelLogs]);
 
   const fuelUnit = form.fuel_type === 'cng' ? 'kg' : 'litres';
 
@@ -136,10 +143,20 @@ export const FuelPage: React.FC = () => {
       </form>
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-soft">
-        <div className="border-b border-slate-100 px-4 py-3"><h3 className="font-bold text-slate-900">Fuel statement</h3></div>
+        <div className="flex flex-col gap-2 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div><h3 className="font-bold text-slate-900">Fuel statement</h3><p className="text-xs text-slate-500">Entries are ordered newest first.</p></div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+            Date filter
+            <select value={activeDateFilter} onChange={(event) => setDateFilter(event.target.value)} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800">
+              <option value="">All dates</option>
+              {availableDates.map((date) => <option key={date} value={date}>{formatDate(date)}</option>)}
+            </select>
+          </label>
+        </div>
         {isLoading ? <p className="p-5 text-sm text-slate-500">Loading fuel records…</p> : monthFuelLogs.length === 0 ? <p className="p-5 text-sm text-slate-500">No fuel entries recorded for {selectedMonth}.</p> : (
           <>
-          <div className="space-y-3 p-3 sm:hidden">{monthFuelLogs.map((log) => (
+          {filteredFuelLogs.length === 0 ? <p className="p-5 text-sm text-slate-500">No fuel entries on {formatDate(activeDateFilter)}.</p> : <>
+          <div className="space-y-3 p-3 sm:hidden">{filteredFuelLogs.map((log) => (
             <article key={log.id} className="rounded-xl border border-slate-200 p-3 text-sm">
               <div className="flex items-start justify-between gap-2"><div><p className="font-bold text-slate-900">{log.vehicle_number}</p><p className="text-xs text-slate-500">{formatDate(log.date)} · {employees.find((employee) => employee.id === log.employee_id)?.full_name || 'No driver selected'}</p></div><span className="rounded-full bg-purple-50 px-2.5 py-1 text-xs font-bold uppercase text-purple-700">{log.fuel_type || 'Unspecified'}</span></div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-xs"><p><span className="text-slate-500">Use</span><br /><strong>{log.use || '—'}</strong></p><p><span className="text-slate-500">Odometer</span><br /><strong>{Number(log.start_km).toLocaleString('en-IN')} → {Number(log.end_km).toLocaleString('en-IN')} km</strong></p><p><span className="text-slate-500">Distance</span><br /><strong>{Math.max(0, Number(log.end_km) - Number(log.start_km)).toLocaleString('en-IN')} km</strong></p><p><span className="text-slate-500">Fuel</span><br /><strong>{Number(log.fuel_litres).toLocaleString('en-IN')} {log.fuel_type === 'cng' ? 'kg' : 'L'}</strong></p><p><span className="text-slate-500">Cost</span><br /><strong>{formatINR(Number(log.amount))}</strong></p><button type="button" disabled={isDeleting} onClick={() => void deleteFuelLog(log.id)} className="mt-2 inline-flex items-center gap-1 text-rose-700"><Trash2 className="h-3.5 w-3.5" />Delete</button></div>
@@ -148,7 +165,7 @@ export const FuelPage: React.FC = () => {
           <div className="hidden overflow-x-auto sm:block">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="px-4 py-3">Date</th><th className="px-4 py-3">Vehicle</th><th className="px-4 py-3">Driver</th><th className="px-4 py-3">Use</th><th className="px-4 py-3">Start → End</th><th className="px-4 py-3">Distance</th><th className="px-4 py-3">Fuel type</th><th className="px-4 py-3">Fuel</th><th className="px-4 py-3">Cost</th><th className="px-4 py-3">Action</th></tr></thead>
-              <tbody className="divide-y divide-slate-100">{monthFuelLogs.map((log) => (
+              <tbody className="divide-y divide-slate-100">{filteredFuelLogs.map((log) => (
                 <tr key={log.id}>
                   <td className="px-4 py-3">{formatDate(log.date)}</td>
                   <td className="px-4 py-3 font-semibold">{log.vehicle_number}</td>
@@ -164,6 +181,7 @@ export const FuelPage: React.FC = () => {
               ))}</tbody>
             </table>
           </div>
+          </>}
           </>
         )}
       </section>
